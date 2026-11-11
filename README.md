@@ -8,7 +8,8 @@ Abre **index.html** directamente en un navegador moderno (Chrome, Edge o Firefox
 
 ## Funcionalidades
 
-- **HU-02:** seis laboratorios de ejemplo, pertenecientes a diferentes facultades de la EPN. Filtros por facultad y franja que actualizan el catálogo sin recargar. Selector de fecha y franjas 07:00–09:00, 09:00–11:00, 11:00–13:00 y 14:00–16:00. Cada franja muestra su estado disponible u ocupada, y las ocupadas no se pueden seleccionar.
+- **HU-01:** catálogo de laboratorios de Redes, Software, Electrónica y Física. Cada tarjeta muestra su facultad, edificio, capacidad máxima y equipamiento disponible.
+- **HU-02:** filtros por facultad y franja que actualizan el catálogo sin recargar. Selector de fecha y franjas 07:00–09:00, 09:00–11:00, 11:00–13:00 y 14:00–16:00. Cada franja muestra su estado disponible u ocupada, y las ocupadas no se pueden seleccionar.
 - **HU-04:** selección de laboratorio, fecha y franja; formulario con correo institucional, código único y motivo. Validación del dominio exacto `@epn.edu.ec`, campos vacíos o con solo espacios, longitudes máximas y fechas desde hoy. Mensajes de error junto a cada campo.
 - Persistencia mediante `localStorage`, prevención de reservas duplicadas para un laboratorio/fecha/franja, listado de reservas y cancelación que libera el horario. Los datos introducidos se presentan como texto, sin interpretar HTML.
 - Diseño adaptable a móviles, navegación por teclado, formularios etiquetados, diálogos y avisos accesibles.
@@ -19,7 +20,7 @@ La demostración registra la solicitud automáticamente y ocupa el horario. No e
 
 ## Prueba de aceptación manual
 
-1. Abre `index.html`. Comprueba los seis laboratorios y las cuatro franjas en cada tarjeta.
+1. Abre `index.html`. Comprueba los cuatro laboratorios (Redes, Software, Electrónica y Física), así como su facultad, edificio, capacidad máxima, lista de equipos y las cuatro franjas en cada tarjeta.
 2. Elige una facultad y una franja. Comprueba que solo cambian los resultados, sin recarga. Usa “Limpiar filtros”.
 3. Selecciona una franja verde. Envía el formulario vacío: debe indicar los campos requeridos.
 4. Prueba `usuario@gmail.com` y `usuario@epn.edu.ec.ejemplo.com`: deben rechazarse. Acepta `usuario@epn.edu.ec` con código y motivo no vacíos.

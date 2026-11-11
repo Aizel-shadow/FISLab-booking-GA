@@ -765,6 +765,7 @@ input[type=date] {
   gap:17px;
   color:#74816d;
   font-size:11px;
+  flex-wrap:wrap;
   padding-bottom:17px;
   border-bottom:1px solid #eff1eb
 }
@@ -879,9 +880,35 @@ input[type=date] {
   height:11px
 }
 
-.equipment {
-  font-size:8px;
-  color:#929c88
+.equipment-list {
+  margin:15px 0 0;
+  padding-bottom:15px;
+  border-bottom:1px solid #eff1eb
+}
+
+.equipment-list h4 {
+  margin:0 0 8px;
+  color:#687765;
+  font-size:10px;
+  font-weight:600
+}
+
+.equipment-list ul {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin:0;
+  padding:0;
+  list-style:none
+}
+
+.equipment-list li {
+  padding:4px 8px;
+  border-radius:5px;
+  background:#f3f6f0;
+  color:#687765;
+  font-size:10px;
+  line-height:1.4
 }
 
 .empty-state {
@@ -1833,9 +1860,6 @@ dialog h2 {
   .lab-card-bottom {
     font-size:9px;
     margin-top:15px
-  }
-  .equipment {
-    font-size:9px
   }
   footer {
     flex-direction:column;

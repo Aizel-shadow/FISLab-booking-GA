@@ -14,6 +14,31 @@ function request(overrides = {}) {
   return { labId, date, slot, email: 'estudiante@epn.edu.ec', code: '20260001', reason: 'Práctica de Ingeniería de Software II', ...overrides };
 }
 
+test('el catálogo presenta los cuatro laboratorios solicitados con sus datos completos', () => {
+  assert.deepEqual(Store.LABS.map(lab => lab.name), [
+    'Laboratorio de Redes',
+    'Laboratorio de Software',
+    'Laboratorio de Electrónica',
+    'Laboratorio de Física'
+  ]);
+  for (const lab of Store.LABS) {
+    assert.ok(lab.faculty);
+    assert.ok(lab.location);
+    assert.ok(Number.isInteger(lab.capacity) && lab.capacity > 0);
+    assert.ok(Array.isArray(lab.equipment) && lab.equipment.length > 0);
+  }
+});
+
+test('conserva legibles las reservas históricas de laboratorios retirados sin habilitarlos para nuevas reservas', () => {
+  const storage = memoryStorage();
+  const record = { ...request({ labId: 'fim-01' }), id: 'res-historica', createdAt: new Date().toISOString() };
+  storage.setItem(Store.STORAGE_KEY, JSON.stringify([record]));
+
+  assert.deepEqual(Store.read(storage), [record]);
+  assert.ok(Store.LEGACY_LABS.some(lab => lab.id === record.labId));
+  assert.ok(Store.validateRequest(request({ labId: record.labId })).lab);
+});
+
 test('acepta únicamente el dominio institucional exacto', () => {
   for (const email of ['estudiante@epn.edu.ec', 'docente.nombre@EPN.EDU.EC']) assert.equal(Store.validEmail(email), true);
   for (const email of ['', 'correo@gmail.com', 'usuario@epn.edu.ec.ejemplo.com', 'usuario@sub.epn.edu.ec', '@epn.edu.ec', 'uno@@epn.edu.ec', 'con espacio@epn.edu.ec', 'usuario@epnXeduXec', '.usuario@epn.edu.ec', 'usuario..nombre@epn.edu.ec']) assert.equal(Store.validEmail(email), false, email);

@@ -83,7 +83,12 @@
       const heading = element('h3', '', lab.name);
       const faculty = element('p', 'faculty-name', `Facultad de ${lab.faculty}`);
       const meta = element('div', 'lab-meta');
-      meta.append(iconText('users', `${lab.capacity} personas`), iconText('pin', lab.location));
+      meta.append(iconText('users', `Capacidad máxima: ${lab.capacity} personas`), iconText('pin', lab.location));
+      const equipment = element('section', 'equipment-list');
+      equipment.setAttribute('aria-label', 'Equipamiento disponible');
+      const equipmentItems = element('ul');
+      for (const item of lab.equipment) equipmentItems.append(element('li', '', item));
+      equipment.append(element('h4', '', 'Equipamiento disponible'), equipmentItems);
       const slotsHeading = element('div', 'slots-heading');
       const freeCount = shownSlots.filter(slot => !Store.isOccupied(lab.id, selectedDate(), slot, records)).length;
       slotsHeading.append(element('span', '', 'FRANJAS HORARIAS'), element('small', '', `${freeCount} ${freeCount === 1 ? 'disponible' : 'disponibles'}`));
@@ -103,8 +108,8 @@
         slots.append(button);
       }
       const bottom = element('div', 'lab-card-bottom');
-      bottom.append(iconText('info', 'Reserva con correo EPN'), element('span', 'equipment', lab.equipment));
-      card.append(top, heading, faculty, meta, slotsHeading, slots, bottom);
+      bottom.append(iconText('info', 'Reserva con correo EPN'));
+      card.append(top, heading, faculty, meta, equipment, slotsHeading, slots, bottom);
       grid.append(card);
     }
     const count = $('#results-count');
@@ -119,7 +124,7 @@
     list.replaceChildren();
     const ordered = [...records].sort((a, b) => a.date.localeCompare(b.date) || a.slot.localeCompare(b.slot));
     for (const record of ordered) {
-      const lab = Store.LABS.find(item => item.id === record.labId);
+      const lab = Store.LABS.find(item => item.id === record.labId) || Store.LEGACY_LABS.find(item => item.id === record.labId);
       const card = element('article', 'reservation-card');
       const symbol = element('span', 'stat-icon');
       symbol.append(icon(lab.icon));

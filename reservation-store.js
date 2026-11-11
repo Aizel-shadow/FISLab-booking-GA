@@ -5,12 +5,15 @@
   const STORAGE_KEY = 'FISLab-booking-GX.reservations.v1';
   const SLOTS = Object.freeze(['07:00–09:00', '09:00–11:00', '11:00–13:00', '14:00–16:00']);
   const LABS = Object.freeze([
-    { id: 'fis-01', name: 'Laboratorio de Desarrollo de Software', faculty: 'Ingeniería de Sistemas', acronym: 'FIS', room: 'FIS · 301', location: 'Edificio de Sistemas', capacity: 24, equipment: 'PCs · Proyector · Internet', icon: 'monitor', color: 'green' },
-    { id: 'fie-01', name: 'Laboratorio de Electrónica', faculty: 'Ingeniería Eléctrica y Electrónica', acronym: 'FIEE', room: 'FIEE · 204', location: 'Edificio de Eléctrica', capacity: 20, equipment: 'Circuitos · Osciloscopios', icon: 'circuit', color: 'blue' },
-    { id: 'fim-01', name: 'Laboratorio de Diseño Mecánico', faculty: 'Ingeniería Mecánica', acronym: 'FIM', room: 'FIM · 102', location: 'Edificio de Mecánica', capacity: 18, equipment: 'Estaciones CAD · Proyector', icon: 'monitor', color: 'sand' },
-    { id: 'fic-01', name: 'Laboratorio de Materiales', faculty: 'Ingeniería Civil y Ambiental', acronym: 'FICA', room: 'FICA · 105', location: 'Edificio de Civil', capacity: 16, equipment: 'Muestras · Equipos de ensayo', icon: 'building', color: 'lilac' },
-    { id: 'fiq-01', name: 'Laboratorio de Química Aplicada', faculty: 'Ingeniería Química y Agroindustria', acronym: 'FIQA', room: 'FIQA · 202', location: 'Edificio de Química', capacity: 20, equipment: 'Mesones · Instrumentación', icon: 'flask', color: 'sand' },
-    { id: 'fc-01', name: 'Laboratorio de Física Experimental', faculty: 'Ciencias', acronym: 'FC', room: 'FC · 103', location: 'Edificio de Ciencias', capacity: 24, equipment: 'Sensores · Kits de física', icon: 'flask', color: 'blue' }
+    { id: 'fis-redes', name: 'Laboratorio de Redes', faculty: 'Ingeniería de Sistemas', acronym: 'FIS', room: 'FIS · 302', location: 'Edificio de Sistemas', capacity: 24, equipment: ['Routers', 'Switches', 'Puntos de acceso', 'Probador de cableado'], icon: 'monitor', color: 'green' },
+    { id: 'fis-01', name: 'Laboratorio de Software', faculty: 'Ingeniería de Sistemas', acronym: 'FIS', room: 'FIS · 301', location: 'Edificio de Sistemas', capacity: 24, equipment: ['Computadoras', 'Proyector', 'Internet'], icon: 'monitor', color: 'green' },
+    { id: 'fie-01', name: 'Laboratorio de Electrónica', faculty: 'Ingeniería Eléctrica y Electrónica', acronym: 'FIEE', room: 'FIEE · 204', location: 'Edificio de Eléctrica', capacity: 20, equipment: ['Osciloscopios', 'Multímetros', 'Fuentes de alimentación', 'Protoboards'], icon: 'circuit', color: 'blue' },
+    { id: 'fc-01', name: 'Laboratorio de Física', faculty: 'Ciencias', acronym: 'FC', room: 'FC · 103', location: 'Edificio de Ciencias', capacity: 24, equipment: ['Sensores', 'Kits de experimentación', 'Instrumentos de medición'], icon: 'flask', color: 'blue' }
+  ].map(lab => Object.freeze({ ...lab, equipment: Object.freeze(lab.equipment) })));
+  const LEGACY_LABS = Object.freeze([
+    { id: 'fim-01', name: 'Laboratorio de Diseño Mecánico', room: 'FIM · 102', icon: 'monitor' },
+    { id: 'fic-01', name: 'Laboratorio de Materiales', room: 'FICA · 105', icon: 'building' },
+    { id: 'fiq-01', name: 'Laboratorio de Química Aplicada', room: 'FIQA · 202', icon: 'flask' }
   ].map(Object.freeze));
 
   function today() {
@@ -43,9 +46,11 @@
   }
 
   function isRecord(record) {
-    return record && typeof record === 'object' && typeof record.id === 'string' && record.id.length > 0 && record.id.length <= 80 &&
-      typeof record.createdAt === 'string' && !Number.isNaN(Date.parse(record.createdAt)) &&
-      Object.keys(validateRequest(record, '0000-01-01')).length === 0;
+    if (!record || typeof record !== 'object' || typeof record.id !== 'string' || record.id.length === 0 || record.id.length > 80 ||
+      typeof record.createdAt !== 'string' || Number.isNaN(Date.parse(record.createdAt))) return false;
+    const labId = LABS.some(lab => lab.id === record.labId) ? record.labId :
+      LEGACY_LABS.some(lab => lab.id === record.labId) ? LABS[0].id : null;
+    return labId !== null && Object.keys(validateRequest({ ...record, labId }, '0000-01-01')).length === 0;
   }
 
   function read(storage) {
@@ -101,7 +106,7 @@
     return true;
   }
 
-  const api = Object.freeze({ STORAGE_KEY, SLOTS, LABS, today, isValidDate, validEmail, validateRequest, read, isOccupied, reserve, cancel });
+  const api = Object.freeze({ STORAGE_KEY, SLOTS, LABS, LEGACY_LABS, today, isValidDate, validEmail, validateRequest, read, isOccupied, reserve, cancel });
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.FISLabStore = api;
 })(globalThis);
