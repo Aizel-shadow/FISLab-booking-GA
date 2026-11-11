@@ -1926,3 +1926,10 @@ dialog h2 {
     scroll-behavior:auto!important
   }
 }
+
+.slot:disabled { color:#9c4540; background:#fff1ef; border-color:#eed5d1; }
+.slot.pending:disabled,.reservation-status.pending { color:#a65a18; background:#fff0df; border-color:#edc99d; }
+.slot.maintenance:disabled { color:#856600; background:#fff3ba; border-color:#dfc65f; }
+.slot.maintenance > span { text-align:center; }
+#panel-view .reservation-card { flex-wrap:wrap; }
+#panel-view input[type=checkbox] { width:20px; height:20px; accent-color:#a88618; vertical-align:middle; }

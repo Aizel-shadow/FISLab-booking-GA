@@ -3,6 +3,9 @@
   'use strict';
 
   const STORAGE_KEY = 'FISLab-booking-GX.reservations.v1';
+  const MAINTENANCE_KEY = STORAGE_KEY + '.maintenance';
+  const statusOf = record => record.status || 'Aprobada';
+  const blocks = record => statusOf(record) !== 'Rechazada';
   const SLOTS = Object.freeze(['07:00–09:00', '09:00–11:00', '11:00–13:00', '14:00–16:00']);
   const LABS = Object.freeze([
     { id: 'fis-redes', name: 'Laboratorio de Redes', faculty: 'Ingeniería de Sistemas', acronym: 'FIS', room: 'FIS · 302', location: 'Edificio de Sistemas', capacity: 24, equipment: ['Routers', 'Switches', 'Puntos de acceso', 'Probador de cableado'], icon: 'monitor', color: 'green' },
@@ -50,7 +53,7 @@
       typeof record.createdAt !== 'string' || Number.isNaN(Date.parse(record.createdAt))) return false;
     const labId = LABS.some(lab => lab.id === record.labId) ? record.labId :
       LEGACY_LABS.some(lab => lab.id === record.labId) ? LABS[0].id : null;
-    return labId !== null && Object.keys(validateRequest({ ...record, labId }, '0000-01-01')).length === 0;
+    return (record.status === undefined || ['Pendiente', 'Aprobada', 'Rechazada'].includes(record.status)) && labId !== null && Object.keys(validateRequest({ ...record, labId }, '0000-01-01')).length === 0;
   }
 
   function read(storage) {
@@ -65,11 +68,11 @@
       const bookings = new Set();
       for (const record of records) {
         const key = `${record.labId}|${record.date}|${record.slot}`;
-        if (ids.has(record.id) || bookings.has(key)) throw new Error('Datos duplicados');
+        if (ids.has(record.id) || (blocks(record) && bookings.has(key))) throw new Error('Datos duplicados');
         ids.add(record.id);
-        bookings.add(key);
+        if (blocks(record)) bookings.add(key);
       }
-      return records;
+      return records.map(record => ({ ...record, status: statusOf(record) }));
     } catch { throw new Error('Los datos de reservas guardados no se pueden leer. No se han sobrescrito. Revisa el almacenamiento de FISLab en tu navegador antes de continuar.'); }
   }
 
@@ -78,13 +81,14 @@
     catch { throw new Error('No se pudo guardar el cambio. Revisa el espacio y los permisos de almacenamiento de tu navegador e inténtalo de nuevo.'); }
   }
 
-  function isOccupied(labId, date, slot, records) {
+  function isOccupied(labId, date, slot, records, maintenance = {}) {
+    if (maintenance[labId]) return true;
     if (!isValidDate(date)) return true;
     const labIndex = LABS.findIndex(lab => lab.id === labId);
     if (labIndex < 0 || !SLOTS.includes(slot)) return true;
     // Una franja de ejemplo por laboratorio; el patrón varía según el día.
     const sampleIndex = (labIndex + new Date(`${date}T12:00:00`).getDay()) % SLOTS.length;
-    return SLOTS[sampleIndex] === slot || records.some(record => record.labId === labId && record.date === date && record.slot === slot);
+    return SLOTS[sampleIndex] === slot || records.some(record => blocks(record) && record.labId === labId && record.date === date && record.slot === slot);
   }
 
   function reserve(storage, input) {
@@ -92,21 +96,43 @@
     const errors = validateRequest(normalized);
     if (Object.keys(errors).length) return { errors };
     const records = read(storage);
-    if (isOccupied(normalized.labId, normalized.date, normalized.slot, records)) return { conflict: true };
+    if (isOccupied(normalized.labId, normalized.date, normalized.slot, records, readMaintenance(storage))) return { conflict: true };
     const id = root.crypto && typeof root.crypto.randomUUID === 'function' ? root.crypto.randomUUID() : `res-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-    const record = { ...normalized, id, createdAt: new Date().toISOString() };
+    const record = { ...normalized, status: 'Pendiente', id, createdAt: new Date().toISOString() };
     write(storage, [...records, record]);
     return { record };
   }
 
   function cancel(storage, id) {
     const records = read(storage);
-    if (!records.some(record => record.id === id)) return false;
+    if (!records.some(record => record.id === id && statusOf(record) !== 'Rechazada')) return false;
     write(storage, records.filter(record => record.id !== id));
     return true;
   }
 
-  const api = Object.freeze({ STORAGE_KEY, SLOTS, LABS, LEGACY_LABS, today, isValidDate, validEmail, validateRequest, read, isOccupied, reserve, cancel });
+  function readMaintenance(storage) {
+    const raw = storage.getItem(MAINTENANCE_KEY);
+    if (raw === null) return {};
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== 'object' || Array.isArray(data) || Object.values(data).some(value => typeof value !== 'boolean')) throw new Error('Datos de mantenimiento inv?lidos.');
+    return data;
+  }
+  function setMaintenance(storage, labId, enabled) {
+    if (!LABS.some(lab => lab.id === labId) || typeof enabled !== 'boolean') throw new Error('Laboratorio o estado inv?lido.');
+    const data = readMaintenance(storage);
+    data[labId] = enabled;
+    storage.setItem(MAINTENANCE_KEY, JSON.stringify(data));
+  }
+  function processRequest(storage, id, status) {
+    if (!['Aprobada', 'Rechazada'].includes(status)) throw new Error('Estado inv?lido.');
+    const records = read(storage);
+    const record = records.find(item => item.id === id);
+    if (!record || statusOf(record) !== 'Pendiente') throw new Error('La solicitud ya fue procesada o no existe.');
+    record.status = status;
+    write(storage, records);
+  }
+
+  const api = Object.freeze({ STORAGE_KEY, MAINTENANCE_KEY, statusOf, readMaintenance, setMaintenance, processRequest, SLOTS, LABS, LEGACY_LABS, today, isValidDate, validEmail, validateRequest, read, isOccupied, reserve, cancel });
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.FISLabStore = api;
 })(globalThis);

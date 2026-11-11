@@ -11,6 +11,8 @@
   const bookingDate = $('#booking-date');
   const bookingTime = $('#booking-time');
   let records = [];
+  let maintenance = {};
+  const occupied = (lab, date, slot) => Store.isOccupied(lab, date, slot, records, maintenance);
   let pendingCancellation = null;
   let toastTimeout;
   let dateAtRender = Store.today();
@@ -50,6 +52,7 @@
   function refreshRecords() {
     try {
       records = Store.read(window.localStorage);
+      maintenance = Store.readMaintenance(window.localStorage);
       $('#storage-warning').hidden = true;
       return true;
     } catch (error) {
@@ -62,7 +65,7 @@
 
   function renderStats() {
     $('#lab-stat').textContent = Store.LABS.length;
-    const count = Store.LABS.reduce((sum, lab) => sum + Store.SLOTS.filter(slot => !Store.isOccupied(lab.id, selectedDate(), slot, records)).length, 0);
+    const count = Store.LABS.reduce((sum, lab) => sum + Store.SLOTS.filter(slot => !occupied(lab.id, selectedDate(), slot)).length, 0);
     $('#slot-stat').textContent = count;
     $('#reservation-stat').textContent = records.length;
     $('#nav-count').textContent = records.length;
@@ -90,19 +93,19 @@
       for (const item of lab.equipment) equipmentItems.append(element('li', '', item));
       equipment.append(element('h4', '', 'Equipamiento disponible'), equipmentItems);
       const slotsHeading = element('div', 'slots-heading');
-      const freeCount = shownSlots.filter(slot => !Store.isOccupied(lab.id, selectedDate(), slot, records)).length;
+      const freeCount = shownSlots.filter(slot => !occupied(lab.id, selectedDate(), slot)).length;
       slotsHeading.append(element('span', '', 'FRANJAS HORARIAS'), element('small', '', `${freeCount} ${freeCount === 1 ? 'disponible' : 'disponibles'}`));
       const slots = element('div', `time-slots${shownSlots.length === 1 ? ' single-slot' : ''}`);
       for (const slot of shownSlots) {
-        const occupied = Store.isOccupied(lab.id, selectedDate(), slot, records);
-        const button = element('button', 'slot');
+        const isBusy = occupied(lab.id, selectedDate(), slot);
+        const button = element('button', `slot${maintenance[lab.id] ? ' maintenance' : records.some(r => r.labId === lab.id && r.date === selectedDate() && r.slot === slot && r.status === 'Pendiente') ? ' pending' : ''}`);
         button.type = 'button';
-        button.disabled = occupied;
-        button.setAttribute('aria-label', `${slot}, ${occupied ? 'ocupada' : 'disponible'}, ${lab.name}`);
+        button.disabled = isBusy;
+        button.setAttribute('aria-label', `${slot}, ${isBusy ? 'ocupada' : 'disponible'}, ${lab.name}`);
         button.dataset.lab = lab.id;
         button.dataset.slot = slot;
         const status = element('span');
-        status.append(element('i', 'dot'), document.createTextNode(occupied ? 'Ocupada' : 'Disponible'));
+        status.append(element('i', 'dot'), document.createTextNode(maintenance[lab.id] ? 'En mantenimiento' : button.classList.contains('pending') ? 'Pendiente' : isBusy ? 'Ocupada' : 'Disponible'));
         button.append(element('strong', '', slot), status);
         button.addEventListener('click', () => openBooking(lab.id, slot));
         slots.append(button);
@@ -134,10 +137,11 @@
       const meta = element('div', 'reservation-meta');
       meta.append(iconText('calendar', formatDate(record.date)), iconText('clock', record.slot), iconText('pin', lab.room));
       const statusLine = element('div');
-      statusLine.append(element('span', 'reservation-status', record.date < Store.today() ? 'Fecha pasada' : 'Registrada'), number);
+      statusLine.append(element('span', 'reservation-status', Store.statusOf(record)), number);
       const email = element('div', 'reservation-email', `${record.email} · Código ${record.code}`);
       const cancel = element('button', 'button secondary', 'Cancelar reserva');
       cancel.type = 'button';
+      cancel.hidden = record.status === 'Rechazada';
       cancel.setAttribute('aria-label', `Cancelar reserva de ${lab.name}, ${formatDate(record.date)}, ${record.slot}`);
       cancel.addEventListener('click', () => {
         pendingCancellation = record.id;
@@ -154,6 +158,43 @@
   function renderAll() {
     renderLabs();
     renderReservations();
+    renderPanel();
+  }
+
+  function renderPanel() {
+    const list = $('#pending-list');
+    list.replaceChildren();
+    const pending = records.filter(record => record.status === 'Pendiente');
+    if (!pending.length) list.append(element('p', 'notice', 'No hay solicitudes pendientes.'));
+    for (const record of pending) {
+      const lab = [...Store.LABS, ...Store.LEGACY_LABS].find(lab => lab.id === record.labId);
+      const card = element('article', 'reservation-card');
+      const content = element('div', 'reservation-content');
+      content.append(element('h3', '', lab.name), element('p', '', `${record.email} ? C?digo ${record.code}`), element('p', '', `${formatDate(record.date)} ? ${record.slot}`), element('p', 'reservation-reason', record.reason), element('span', 'reservation-status pending', 'Pendiente'));
+      card.append(content);
+      for (const status of ['Aprobada', 'Rechazada']) {
+        const button = element('button', 'button secondary', status === 'Aprobada' ? 'Aprobar' : 'Rechazar');
+        button.addEventListener('click', () => {
+          try { Store.processRequest(window.localStorage, record.id, status); refreshRecords(); renderAll(); showToast(`Solicitud ${status.toLowerCase()}.`); }
+          catch (error) { storageError(error); }
+        });
+        card.append(button);
+      }
+      list.append(card);
+    }
+    const management = $('#maintenance-list');
+    management.replaceChildren();
+    for (const lab of Store.LABS) {
+      const row = element('div', 'reservation-card');
+      const label = element('label', 'reservation-content', lab.name + ' ? En mantenimiento ');
+      const checkbox = element('input');
+      checkbox.type = 'checkbox'; checkbox.checked = Boolean(maintenance[lab.id]);
+      checkbox.addEventListener('change', () => {
+        try { Store.setMaintenance(window.localStorage, lab.id, checkbox.checked); refreshRecords(); renderAll(); if (bookingDialog.open) updateBookingOptions(); showToast('Mantenimiento actualizado.'); }
+        catch (error) { checkbox.checked = !checkbox.checked; storageError(error); }
+      });
+      label.append(checkbox); row.append(label); management.append(row);
+    }
   }
 
   function clearErrors() {
@@ -177,7 +218,7 @@
     bookingTime.replaceChildren();
     const available = [];
     for (const slot of Store.SLOTS) {
-      const occupied = Store.isOccupied(bookingLab.value, bookingDate.value, slot, records);
+      const occupied = Store.isOccupied(bookingLab.value, bookingDate.value, slot, records, maintenance);
       const option = new Option(`${slot}${occupied ? ' · Ocupada' : ''}`, slot);
       option.disabled = occupied;
       bookingTime.add(option);
@@ -260,14 +301,17 @@
 
   function route(focus = true) {
     const isReservations = window.location.hash === '#reservas';
-    $('#explore-view').hidden = isReservations;
+    const isPanel = window.location.hash === '#laboratorista';
+    $('#panel-view').hidden = !isPanel;
+    $('#nav-panel').classList.toggle('active', isPanel);
+    $('#explore-view').hidden = isReservations || isPanel;
     $('#reservations-view').hidden = !isReservations;
-    $('#nav-explore').classList.toggle('active', !isReservations);
+    $('#nav-explore').classList.toggle('active', !isReservations && !isPanel);
     $('#nav-reservations').classList.toggle('active', isReservations);
-    $('#nav-explore').toggleAttribute('aria-current', !isReservations);
+    $('#nav-explore').toggleAttribute('aria-current', !isReservations && !isPanel);
     $('#nav-reservations').toggleAttribute('aria-current', isReservations);
     (isReservations ? $('#nav-reservations') : $('#nav-explore')).setAttribute('aria-current', 'page');
-    $('#breadcrumb-page').textContent = isReservations ? 'Mis reservas' : 'Laboratorios';
+    $('#breadcrumb-page').textContent = isPanel ? 'Panel del Laboratorista' : isReservations ? 'Mis reservas' : 'Laboratorios';
     document.title = `${isReservations ? 'Mis reservas' : 'Laboratorios'} · FISLab-booking-GX`;
     const isPageNavigation = ['', '#explorar', '#reservas'].includes(window.location.hash);
     if (focus && isPageNavigation) { $('#main').focus({ preventScroll: true }); window.scrollTo({ top: 0 }); }
@@ -328,7 +372,7 @@
   $('#dismiss-toast').addEventListener('click', () => { $('#toast').hidden = true; });
   window.addEventListener('hashchange', () => route());
   window.addEventListener('storage', event => {
-    if (event.key === Store.STORAGE_KEY || event.key === null) {
+    if (event.key === Store.STORAGE_KEY || event.key === Store.MAINTENANCE_KEY || event.key === null) {
       refreshRecords();
       renderAll();
       if (bookingDialog.open) updateBookingOptions();

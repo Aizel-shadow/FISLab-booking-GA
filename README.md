@@ -40,3 +40,16 @@ La demostración registra la solicitud automáticamente y ocupa el horario. No e
 Clave de almacenamiento: `FISLab-booking-GX.reservations.v1`. Para una demostración nueva, cancela las reservas desde la interfaz; también puedes eliminar únicamente esta clave desde las herramientas de desarrollo. Los errores de permisos, espacio o formato se muestran en pantalla y no generan confirmaciones falsas ni sobrescriben datos ilegibles.
 
 `localStorage` no ofrece transacciones entre ventanas: se comprueba nuevamente la disponibilidad al confirmar y se sincronizan los eventos de almacenamiento, pero una escritura exactamente simultánea desde varias pestañas no tiene garantías transaccionales. Este prototipo está pensado para una demostración local en una sola pestaña.
+
+
+## HU-07 y HU-08: Sprint Review
+
+Archivos ampliados: `reservation-store.js` (estados, compatibilidad hist?rica y mantenimiento), `app.js` (panel y disponibilidad), `index.html` (navegaci?n y secci?n), `styles.css` (indicadores), `tests/reservations.test.cjs` y este documento.
+
+Las solicitudes nuevas son Pendiente. Aprobar mantiene la franja ocupada; rechazar conserva el registro en Mis reservas y libera la franja. Una solicitud procesada no puede procesarse nuevamente. Las reservas hist?ricas sin estado se interpretan como Aprobada. Mantenimiento se almacena por laboratorio y prevalece sobre las reservas, sin modificarlas. Desactivarlo restaura las restricciones pendientes y aprobadas. Las ocupaciones de ejemplo tambi?n se conservan.
+
+Prueba manual HU-07: crea dos solicitudes en franjas libres, abre Panel del Laboratorista, aprueba una y rechaza otra. Verifica los estados en Mis reservas y que ?nicamente la rechazada libera el horario. Recarga y comprueba persistencia. Intenta reservar una franja pendiente: debe permanecer bloqueada.
+
+Prueba manual HU-08: activa mantenimiento desde el panel. En el cat?logo, verifica franjas amarillas deshabilitadas, texto En mantenimiento y filtros operativos. Recarga: el mantenimiento debe persistir. Desact?valo y comprueba que siguen bloqueadas las reservas pendientes y aprobadas, mientras las franjas libres vuelven a permitir solicitudes.
+
+El panel es de demostraci?n y accesible sin control de roles. El almacenamiento no es compartido entre equipos y no garantiza transacciones simult?neas entre pesta?as. La verificaci?n visual requiere abrir index.html en un navegador; no se ejecut? una prueba visual automatizada en este entorno.

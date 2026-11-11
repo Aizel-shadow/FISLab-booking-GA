@@ -34,7 +34,7 @@ test('conserva legibles las reservas históricas de laboratorios retirados sin h
   const record = { ...request({ labId: 'fim-01' }), id: 'res-historica', createdAt: new Date().toISOString() };
   storage.setItem(Store.STORAGE_KEY, JSON.stringify([record]));
 
-  assert.deepEqual(Store.read(storage), [record]);
+  assert.deepEqual(Store.read(storage), [{ ...record, status: 'Aprobada' }]);
   assert.ok(Store.LEGACY_LABS.some(lab => lab.id === record.labId));
   assert.ok(Store.validateRequest(request({ labId: record.labId })).lab);
 });
@@ -127,4 +127,37 @@ test('datos dañados no se sobrescriben, y errores de almacenamiento no se confi
   assert.throws(() => Store.read(deniedRead), /localStorage/);
   const deniedWrite = { getItem: () => null, setItem() { throw new Error('QuotaExceededError'); } };
   assert.throws(() => Store.reserve(deniedWrite, request()), /No se pudo guardar/);
+});
+
+
+test('HU-07: pendiente bloquea, aprobar mantiene y rechazar libera conservando historial', () => {
+  for (const status of ['Aprobada', 'Rechazada']) {
+    const storage = memoryStorage(); const input = request();
+    const { record } = Store.reserve(storage, input);
+    assert.equal(record.status, 'Pendiente');
+    assert.equal(Store.reserve(storage, input).conflict, true);
+    Store.processRequest(storage, record.id, status);
+    const records = Store.read(storage);
+    assert.equal(records[0].status, status);
+    assert.equal(Store.isOccupied(input.labId, input.date, input.slot, records), status === 'Aprobada');
+    assert.throws(() => Store.processRequest(storage, record.id, 'Aprobada'));
+    if (status === 'Rechazada') {
+      assert.ok(Store.reserve(storage, input).record);
+      assert.equal(Store.read(storage).length, 2);
+    }
+  }
+});
+test('HU-08: mantenimiento persiste, bloquea y restaura reservas intactas', () => {
+  const storage = memoryStorage(); const input = request();
+  const { record } = Store.reserve(storage, input);
+  Store.setMaintenance(storage, input.labId, true);
+  const maintenance = Store.readMaintenance(storage);
+  assert.equal(maintenance[input.labId], true);
+  for (const slot of Store.SLOTS) assert.equal(Store.isOccupied(input.labId, input.date, slot, Store.read(storage), maintenance), true);
+  const freeSlot = Store.SLOTS.find(slot => !Store.isOccupied(input.labId, input.date, slot, Store.read(storage)));
+  assert.equal(Store.reserve(storage, { ...input, slot: freeSlot }).conflict, true);
+  Store.setMaintenance(storage, input.labId, false);
+  assert.equal(Store.isOccupied(input.labId, input.date, freeSlot, Store.read(storage), Store.readMaintenance(storage)), false);
+  assert.equal(Store.isOccupied(input.labId, input.date, input.slot, Store.read(storage), Store.readMaintenance(storage)), true);
+  assert.deepEqual(Store.read(storage)[0], record);
 });
