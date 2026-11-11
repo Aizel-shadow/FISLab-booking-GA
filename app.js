@@ -13,6 +13,7 @@
   let records = [];
   let maintenance = {};
   const occupied = (lab, date, slot) => Store.isOccupied(lab, date, slot, records, maintenance);
+  let receiptReservationId = null;
   let pendingCancellation = null;
   let toastTimeout;
   let dateAtRender = Store.today();
@@ -154,6 +155,12 @@
       });
       content.append(heading, meta, statusLine, element('p', 'reservation-reason', record.reason), email);
       card.append(symbol, content, cancel);
+      if (Store.statusOf(record) === 'Aprobada') {
+        const receiptButton = element('button', 'button primary', 'Ver comprobante');
+        receiptButton.type = 'button';
+        receiptButton.addEventListener('click', () => openReceipt(record.id));
+        card.append(receiptButton);
+      }
       list.append(card);
     }
     $('#empty-reservations').hidden = records.length > 0;
@@ -179,7 +186,7 @@
       for (const status of ['Aprobada', 'Rechazada']) {
         const button = element('button', 'button secondary', status === 'Aprobada' ? 'Aprobar' : 'Rechazar');
         button.addEventListener('click', () => {
-          try { Store.processRequest(window.localStorage, record.id, status); refreshRecords(); renderAll(); showToast(`Solicitud ${status.toLowerCase()}.`); }
+          try { Store.processRequest(window.localStorage, record.id, status); refreshRecords(); renderAll(); showToast(`Solicitud ${status.toLowerCase()}.`); if (status === 'Aprobada') openReceipt(record.id); }
           catch (error) { storageError(error); }
         });
         card.append(button);
@@ -200,6 +207,43 @@
       label.append(checkbox); row.append(label); management.append(row);
     }
   }
+
+  function openReceipt(id) {
+    try {
+      const receipt = Store.getReceipt(window.localStorage, id);
+      receiptReservationId = id;
+      const content = $('#receipt-content');
+      content.replaceChildren(element('p', 'receipt-code', receipt.receiptCode));
+      const details = element('dl', 'receipt-details');
+      for (const [label, value] of window.FISLabReceipt.fields(receipt)) {
+        details.append(element('dt', '', label), element('dd', '', value));
+      }
+      content.append(details);
+      $('#receipt-error').hidden = true;
+      if (!$('#receipt-dialog').open) $('#receipt-dialog').showModal();
+    } catch (error) { storageError(error); }
+  }
+
+  $('#download-receipt').addEventListener('click', () => {
+    const errorBox = $('#receipt-error');
+    errorBox.hidden = true;
+    try {
+      // Releer antes de exportar: una reserva cancelada ya no es valida.
+      const receipt = Store.getReceipt(window.localStorage, receiptReservationId);
+      const canvas = window.FISLabReceipt.draw(document.createElement('canvas'), receipt);
+      canvas.toBlob(blob => {
+        if (!blob) { errorBox.textContent = 'No se pudo generar el PNG.'; errorBox.hidden = false; return; }
+        try {
+          Store.getReceipt(window.localStorage, receiptReservationId);
+          const url = URL.createObjectURL(blob);
+          const link = element('a');
+          link.href = url; link.download = `${receipt.receiptCode}.png`;
+          document.body.append(link); link.click(); link.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 30000);
+        } catch (error) { errorBox.textContent = error.message; errorBox.hidden = false; }
+      }, 'image/png');
+    } catch (error) { errorBox.textContent = error.message; errorBox.hidden = false; }
+  });
 
   function clearErrors() {
     bookingForm.querySelectorAll('[aria-invalid]').forEach(input => input.removeAttribute('aria-invalid'));

@@ -129,10 +129,38 @@
     const record = records.find(item => item.id === id);
     if (!record || statusOf(record) !== 'Pendiente') throw new Error('La solicitud ya fue procesada o no existe.');
     record.status = status;
+    if (status === 'Aprobada') record.receiptCode = newReceiptCode(records, record);
+    else delete record.receiptCode;
     write(storage, records);
+    return record;
   }
 
-  const api = Object.freeze({ STORAGE_KEY, MAINTENANCE_KEY, statusOf, readMaintenance, setMaintenance, processRequest, SLOTS, LABS, LEGACY_LABS, today, isValidDate, validEmail, validateRequest, read, isOccupied, reserve, cancel });
+  function newReceiptCode(records, record) {
+    const base = `EPN-${record.date.slice(0, 4)}-${record.id.replace(/[^a-z0-9]/gi, '').toUpperCase()}`;
+    let code = base;
+    let suffix = 1;
+    while (records.some(item => item.receiptCode === code)) code = `${base}-${suffix++}`;
+    return code;
+  }
+
+  function getReceipt(storage, id) {
+    const records = read(storage);
+    const record = records.find(item => item.id === id);
+    if (!record || statusOf(record) !== 'Aprobada') throw new Error('Solo las reservas aprobadas tienen comprobante valido.');
+    // Las aprobaciones anteriores a HU-06 reciben su codigo una sola vez.
+    if (!record.receiptCode) {
+      record.receiptCode = newReceiptCode(records, record);
+      write(storage, records);
+    }
+    const lab = [...LABS, ...LEGACY_LABS].find(item => item.id === record.labId);
+    return { system: 'FISLab-booking', institution: 'Escuela Polit\u00e9cnica Nacional',
+      receiptCode: record.receiptCode, laboratory: lab.name,
+      faculty: lab.faculty ? `Facultad de ${lab.faculty}` : 'No registrada',
+      date: record.date, slot: record.slot, email: record.email,
+      applicantCode: record.code, status: 'APROBADA' };
+  }
+
+  const api = Object.freeze({ STORAGE_KEY, MAINTENANCE_KEY, getReceipt, statusOf, readMaintenance, setMaintenance, processRequest, SLOTS, LABS, LEGACY_LABS, today, isValidDate, validEmail, validateRequest, read, isOccupied, reserve, cancel });
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.FISLabStore = api;
 })(globalThis);

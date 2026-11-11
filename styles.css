@@ -1941,3 +1941,11 @@ dialog h2 {
 .slot.maintenance > span { text-align:center; }
 #panel-view .reservation-card { flex-wrap:wrap; }
 #panel-view input[type=checkbox] { width:20px; height:20px; accent-color:#a88618; vertical-align:middle; }
+
+.receipt-heading { border-bottom:1px solid var(--line); padding-bottom:20px; }
+.receipt-heading h2 { margin-top:12px; }
+.receipt-code { padding:18px; background:var(--mint); color:var(--green); font:600 17px monospace; overflow-wrap:anywhere; border-radius:8px; margin:20px 0; }
+.receipt-details { display:grid; gap:5px; }
+.receipt-details dt { color:var(--muted); font-size:12px; }
+.receipt-details dd { margin:0 0 13px; font-size:14px; overflow-wrap:anywhere; }
+.reservation-card { flex-wrap:wrap; }

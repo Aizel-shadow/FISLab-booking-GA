@@ -54,3 +54,16 @@ Prueba manual HU-07: crea dos solicitudes en franjas libres, abre Panel del Labo
 Prueba manual HU-08: activa mantenimiento desde el panel. En el cat?logo, verifica franjas amarillas deshabilitadas, texto En mantenimiento y filtros operativos. Recarga: el mantenimiento debe persistir. Desact?valo y comprueba que siguen bloqueadas las reservas pendientes y aprobadas, mientras las franjas libres vuelven a permitir solicitudes.
 
 El panel es de demostraci?n y accesible sin control de roles. El almacenamiento no es compartido entre equipos y no garantiza transacciones simult?neas entre pesta?as. La verificaci?n visual requiere abrir index.html en un navegador; no se ejecut? una prueba visual automatizada en este entorno.
+
+
+## HU-06: comprobante digital
+
+Al aprobar desde Panel del Laboratorista se guarda `receiptCode` junto con el estado Aprobada, en una sola escritura. Formato: EPN-a?o de reserva-identificador alfanum?rico de la reserva. Se comprueban colisiones locales y, si existe alguna, se agrega un sufijo. Consultar o recargar conserva el c?digo. Pendientes y rechazadas no tienen comprobante v?lido. Las aprobaciones anteriores a HU-06 reciben un c?digo persistente en su primera consulta; la facultad hist?rica ausente se muestra como No registrada.
+
+El comprobante se abre al aprobar. Tambi?n est? disponible en Mis reservas > Ver comprobante > Descargar comprobante. La exportaci?n es PNG de 1200 p?xeles de ancho, con altura din?mica y ajuste de textos largos, mediante canvas y Blob nativos, sin red ni dependencias. Incluye los datos institucionales y de reserva requeridos. Cancelar una reserva invalida su consulta y descarga desde la aplicaci?n; un PNG ya descargado no puede revocarse.
+
+Archivos HU-06: reservation-store.js, app.js, index.html, styles.css, nuevo receipt.js, tests/receipts.test.cjs y README.md.
+
+Prueba manual: crear una solicitud y comprobar que no ofrece comprobante; aprobarla y revisar los datos del di?logo; descargar y abrir el PNG; recargar y consultar desde Mis reservas verificando el mismo c?digo; aprobar otra reserva y comparar c?digos; rechazar una tercera y verificar que no ofrece comprobante. Activar mantenimiento no debe cambiar c?digos ni reservas aprobadas.
+
+Pruebas automatizadas: node --test tests/*.test.cjs. La prueba de dibujo usa un contexto simulado para verificar contenido y l?mites: no sustituye abrir el PNG real. No se ha verificado visualmente la descarga en navegador en este entorno. El c?digo es ?nico dentro de los datos locales, no una firma institucional ni una verificaci?n centralizada; los datos de localStorage son editables por el usuario.
