@@ -14,4 +14,8 @@ test('todos los elementos consultados por app.js existen en index.html', () => {
   for (const id of ['panel-view', 'nav-panel', 'pending-list', 'maintenance-list']) {
     assert.ok(ids.includes(id), `Falta el elemento del panel #${id}`);
   }
+  const legend = html.match(/<div class="availability-key"[^>]*>(.*?)<\/div>/)?.[1] || '';
+  assert.match(legend, /class="dot available"><\/i>Disponible/);
+  assert.match(legend, /class="dot occupied"><\/i>Ocupada/);
+  assert.match(legend, /class="dot maintenance"><\/i>En mantenimiento/);
 });

@@ -98,14 +98,18 @@
       const slots = element('div', `time-slots${shownSlots.length === 1 ? ' single-slot' : ''}`);
       for (const slot of shownSlots) {
         const isBusy = occupied(lab.id, selectedDate(), slot);
-        const button = element('button', `slot${maintenance[lab.id] ? ' maintenance' : records.some(r => r.labId === lab.id && r.date === selectedDate() && r.slot === slot && r.status === 'Pendiente') ? ' pending' : ''}`);
+        const isMaintenance = Boolean(maintenance[lab.id]);
+        const isPending = records.some(r => r.labId === lab.id && r.date === selectedDate() && r.slot === slot && r.status === 'Pendiente');
+        const state = isMaintenance ? 'maintenance' : isBusy ? 'occupied' : 'available';
+        const label = isMaintenance ? 'En mantenimiento' : isPending ? 'Pendiente' : isBusy ? 'Ocupada' : 'Disponible';
+        const button = element('button', `slot ${state}${isPending ? ' pending' : ''}`);
         button.type = 'button';
         button.disabled = isBusy;
-        button.setAttribute('aria-label', `${slot}, ${isBusy ? 'ocupada' : 'disponible'}, ${lab.name}`);
+        button.setAttribute('aria-label', `${slot}, ${label.toLowerCase()}, ${lab.name}`);
         button.dataset.lab = lab.id;
         button.dataset.slot = slot;
         const status = element('span');
-        status.append(element('i', 'dot'), document.createTextNode(maintenance[lab.id] ? 'En mantenimiento' : button.classList.contains('pending') ? 'Pendiente' : isBusy ? 'Ocupada' : 'Disponible'));
+        status.append(element('i', `dot ${state}`), document.createTextNode(label));
         button.append(element('strong', '', slot), status);
         button.addEventListener('click', () => openBooking(lab.id, slot));
         slots.append(button);

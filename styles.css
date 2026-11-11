@@ -589,7 +589,11 @@ h1>span {
 }
 
 .dot.occupied {
-  background:#bfc4bf
+  background:#c94c45
+}
+
+.dot.maintenance {
+  background:#d3ad27
 }
 
 .filters {
@@ -1927,9 +1931,13 @@ dialog h2 {
   }
 }
 
-.slot:disabled { color:#9c4540; background:#fff1ef; border-color:#eed5d1; }
-.slot.pending:disabled,.reservation-status.pending { color:#a65a18; background:#fff0df; border-color:#edc99d; }
+.slot.occupied:disabled { color:#9c4540; background:#fff1ef; border-color:#eed5d1; }
+.slot.available { color:#577346; background:#f5f8f1; border-color:#dce7d4; }
 .slot.maintenance:disabled { color:#856600; background:#fff3ba; border-color:#dfc65f; }
+.reservation-status.pending { color:#a65a18; background:#fff0df; border-color:#edc99d; }
+.slot.available .dot { background:#7e9b65; }
+.slot.occupied:disabled .dot { background:#c94c45; }
+.slot.maintenance:disabled .dot { background:#d3ad27; }
 .slot.maintenance > span { text-align:center; }
 #panel-view .reservation-card { flex-wrap:wrap; }
 #panel-view input[type=checkbox] { width:20px; height:20px; accent-color:#a88618; vertical-align:middle; }
