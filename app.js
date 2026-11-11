@@ -310,10 +310,11 @@
     $('#nav-reservations').classList.toggle('active', isReservations);
     $('#nav-explore').toggleAttribute('aria-current', !isReservations && !isPanel);
     $('#nav-reservations').toggleAttribute('aria-current', isReservations);
-    (isReservations ? $('#nav-reservations') : $('#nav-explore')).setAttribute('aria-current', 'page');
+    $('#nav-panel').removeAttribute('aria-current');
+    (isPanel ? $('#nav-panel') : isReservations ? $('#nav-reservations') : $('#nav-explore')).setAttribute('aria-current', 'page');
     $('#breadcrumb-page').textContent = isPanel ? 'Panel del Laboratorista' : isReservations ? 'Mis reservas' : 'Laboratorios';
-    document.title = `${isReservations ? 'Mis reservas' : 'Laboratorios'} · FISLab-booking-GX`;
-    const isPageNavigation = ['', '#explorar', '#reservas'].includes(window.location.hash);
+    document.title = `${$('#breadcrumb-page').textContent} · FISLab-booking-GX`;
+    const isPageNavigation = ['', '#explorar', '#reservas', '#laboratorista'].includes(window.location.hash);
     if (focus && isPageNavigation) { $('#main').focus({ preventScroll: true }); window.scrollTo({ top: 0 }); }
   }
 

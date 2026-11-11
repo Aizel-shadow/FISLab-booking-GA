@@ -23,7 +23,7 @@
     <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m1-16a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 4v2"/></symbol>
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
-    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.1"/></s  ymbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.1"/></symbol>
     <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
     <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 6h18M6 12h12m-9 6h6"/></symbol>
     <symbol id="i-pin" viewBox="0 0 24 24"><path d="M19 10c0 6-7 11-7 11S5 16 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2"/></symbol>
@@ -37,6 +37,7 @@
     <nav aria-label="Navegación principal">
       <a class="nav-link active" id="nav-explore" href="#explorar" aria-current="page"><svg class="icon"><use href="#i-grid"/></svg>Explorar laboratorios</a>
       <a class="nav-link" id="nav-reservations" href="#reservas"><svg class="icon"><use href="#i-calendar"/></svg>Mis reservas <span class="nav-count" id="nav-count">0</span></a>
+      <a class="nav-link" id="nav-panel" href="#laboratorista"><svg class="icon"><use href="#i-users"/></svg>Panel del Laboratorista</a>
       <button class="nav-link" id="guide-button"><svg class="icon"><use href="#i-book"/></svg>Guía de uso</button>
     </nav>
     <div class="sidebar-note"><span class="small-label">IDEAS QUE TOMAN FORMA</span><p>El próximo gran proyecto<br>empieza en un laboratorio.</p><span class="note-line"></span><span class="sidebar-campus">Campus José Rubén Orellana<br>Quito, Ecuador</span></div>
@@ -62,6 +63,13 @@
       </section>
 
       <section id="reservations-view" aria-labelledby="reservations-title" hidden><div class="page-heading"><div><div class="eyebrow">TUS PRÓXIMOS PROYECTOS</div><h1 id="reservations-title">Mis reservas<span>.</span></h1><p>Consulta y administra las reservas guardadas en este navegador.</p></div><a class="button primary" href="#explorar">Nueva reserva <svg class="icon"><use href="#i-arrow"/></svg></a></div><div class="notice"><svg class="icon"><use href="#i-info"/></svg><span>Demostración local: las solicitudes se registran automáticamente y solo se guardan en este navegador.</span></div><div id="reservation-list" class="reservation-list"></div><div class="empty-state" id="empty-reservations"><span class="empty-icon"><svg class="icon"><use href="#i-calendar"/></svg></span><h2>Tu próximo proyecto empieza aquí</h2><p>Aún no tienes reservas. Encuentra un laboratorio y elige tu horario.</p><a href="#explorar" class="button primary">Explorar laboratorios <svg class="icon"><use href="#i-arrow"/></svg></a></div></section>
+      <section id="panel-view" hidden aria-labelledby="panel-title">
+        <div class="page-heading"><div><div class="eyebrow">GESTIÓN LOCAL · DEMOSTRACIÓN</div><h1 id="panel-title">Panel del Laboratorista</h1><p>Aprueba solicitudes y administra el mantenimiento de laboratorios.</p></div></div>
+        <h2>Solicitudes pendientes</h2>
+        <div id="pending-list" class="reservation-list"></div>
+        <h2 style="margin-top:32px">Gestión de mantenimiento</h2>
+        <div id="maintenance-list" class="reservation-list"></div>
+      </section>
       <footer><span><strong>FISLab-booking-GX</strong> <span class="footer-divider">/</span> Ingeniería de Software II</span><span>Taller Scrum · EPN <span class="footer-dot">●</span> Hecho para aprender</span></footer>
     </main>
   </div>
